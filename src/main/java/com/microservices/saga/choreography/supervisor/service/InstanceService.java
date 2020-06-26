@@ -6,10 +6,13 @@ import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefi
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefinitionTransitionEvent;
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepInstance;
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepInstanceTransitionEvent;
+import com.microservices.saga.choreography.supervisor.kafka.KafkaClient;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinitionTransitionEventRepository;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepInstanceRepository;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepInstanceTransitionRepository;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -25,6 +28,8 @@ public class InstanceService {
     final SagaStepInstanceRepository sagaStepInstanceRepository;
     private final SagaStepInstanceTransitionRepository eventInstanceRepository;
 
+    private static final Logger logger = LoggerFactory.getLogger(
+            InstanceService.class);
     /**
      * Handling new event
      *
@@ -33,6 +38,7 @@ public class InstanceService {
     public void handleEvent(Event event) {
         if (sagaStepInstanceRepository.findSagaStepInstancesBySagaInstanceId(event.getSagaInstanceId()).stream()
                 .anyMatch(sagaStepInstance -> sagaStepInstance.getStepName().equals(event.getEventName()))) {
+            logger.debug("Step name is equal to event name");
             return;
         }
         SagaStepDefinitionTransitionEvent eventDefinition = getEventDefinition(event);

@@ -4,11 +4,14 @@ import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefi
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefinitionTransitionEvent;
 import com.microservices.saga.choreography.supervisor.dto.definition.SagaStepDefinitionDto;
 import com.microservices.saga.choreography.supervisor.exception.StepDefinitionNotFoundException;
+import com.microservices.saga.choreography.supervisor.kafka.KafkaClient;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinitionRepository;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinitionTransitionEventRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -38,6 +41,9 @@ public class DefinitionService {
      */
     private final ModelMapper mapper;
 
+    private static final Logger logger = LoggerFactory.getLogger(
+            DefinitionService.class);
+
     /**
      * Saving step definition in database
      *
@@ -46,8 +52,10 @@ public class DefinitionService {
      */
     public SagaStepDefinition addDefinition(SagaStepDefinitionDto stepDefinitionDto) {
         SagaStepDefinition stepDefinition = mapper.map(stepDefinitionDto, SagaStepDefinition.class);
+        logger.debug("Step definition{}", stepDefinition);
         @NonNull List<String> previousSteps = stepDefinitionDto.getPreviousSteps();
         saveTransitionEvent(stepDefinition, previousSteps);
+        logger.info("Transition event is saved");
         return stepDefinitionRepository.save(stepDefinition);
     }
 
@@ -62,6 +70,7 @@ public class DefinitionService {
     public SagaStepDefinition updateDefinition(Long definitionId, SagaStepDefinitionDto stepDefinitionDto)
             throws StepDefinitionNotFoundException {
         SagaStepDefinition updatedDefinition = mapper.map(stepDefinitionDto, SagaStepDefinition.class);
+
 
         SagaStepDefinition foundDefinition = stepDefinitionRepository.findById(definitionId)
                 .orElseThrow(() -> new StepDefinitionNotFoundException("Can't find definition with definitionId {}", definitionId));
@@ -81,6 +90,7 @@ public class DefinitionService {
                     List<SagaStepDefinitionTransitionEvent> allEventsWithDefinition = getAllEventsWithDefinition(sagaStepDefinition);
                     deleteTransitions(allEventsWithDefinition);
                 });
+        logger.debug("All events with definition was deleted in {} step", definitionId);
     }
 
     /**
@@ -133,6 +143,7 @@ public class DefinitionService {
      */
     private void deleteTransitions(@NonNull List<SagaStepDefinitionTransitionEvent> transitionEvents) {
         transitionEvents.forEach(transitionEventRepository::delete);
+        logger.info("This list of events was deleted {}", transitionEvents);
     }
 
     /**

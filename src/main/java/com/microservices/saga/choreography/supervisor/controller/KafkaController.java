@@ -18,5 +18,6 @@ public class KafkaController {
     @PostMapping(value = "/subscribe/{topicName}")
     public void subscribe(@PathVariable String topicName) {
         kafkaClient.subscribe(Collections.singletonList(topicName));
+
     }
 }

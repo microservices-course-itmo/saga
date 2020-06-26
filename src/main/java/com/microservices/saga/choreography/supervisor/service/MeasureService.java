@@ -7,8 +7,11 @@ import com.microservices.saga.choreography.supervisor.dto.measure.SagaStats;
 import com.microservices.saga.choreography.supervisor.dto.measure.StepMetrics;
 import com.microservices.saga.choreography.supervisor.exception.FormattedRuntimeException;
 import com.microservices.saga.choreography.supervisor.exception.StepDefinitionNotFoundException;
+import com.microservices.saga.choreography.supervisor.kafka.KafkaClient;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepInstanceRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +27,9 @@ import static java.util.stream.Collectors.*;
 public class MeasureService {
     private final SagaStepInstanceRepository stepInstanceRepository;
     private final StatisticService statisticService;
+
+    private static final Logger logger = LoggerFactory.getLogger(
+            MeasureService.class);
 
     public List<StepMetrics> getAllStepMetrics() {
         return StreamSupport.stream(stepInstanceRepository.findAll().spliterator(), false)
@@ -49,6 +55,7 @@ public class MeasureService {
     public SagaMetrics getSagaMetricByInstance(Long sagaId) throws StepDefinitionNotFoundException {
         List<SagaStepInstance> sagsSteps = stepInstanceRepository.findSagaStepInstancesBySagaInstanceId(sagaId);
         if (sagsSteps.isEmpty()) {
+            logger.warn("No steps for saga with id {} found", sagaId);
             throw new StepDefinitionNotFoundException("No steps for saga with id {} found.", sagaId);
         }
         return mapSagaToMetric(sagaId, sagsSteps);
@@ -67,6 +74,7 @@ public class MeasureService {
     public SagaInstanceStats getStatsForSagaInstance(Long sagaId) throws StepDefinitionNotFoundException {
         List<SagaStepInstance> sagaSteps = stepInstanceRepository.findSagaStepInstancesBySagaInstanceId(sagaId);
         if (sagaSteps.isEmpty()) {
+            logger.warn("No steps for saga with id {} found", sagaId);
             throw new StepDefinitionNotFoundException("No steps for saga with id {} found", sagaId);
         }
         return statisticService.getStatisticForSteps(sagaSteps);

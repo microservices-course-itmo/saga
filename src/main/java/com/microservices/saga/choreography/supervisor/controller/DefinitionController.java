@@ -6,6 +6,8 @@ import com.microservices.saga.choreography.supervisor.kafka.KafkaClient;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinitionRepository;
 import com.microservices.saga.choreography.supervisor.service.GraphService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +29,9 @@ public class DefinitionController {
     private final GraphService graphService;
     private final KafkaClient kafkaClient;
     private final SagaStepDefinitionRepository stepDefinitionRepository;
+
+    private static final Logger logger = LoggerFactory.getLogger(
+            DefinitionController.class);
 
     @PostMapping(value = "", headers = {"Content-type=application/json"})
     public ResponseEntity<SagaStepDefinition> addDefinition(@RequestBody @Valid SagaStepDefinitionDto stepDefinitionDto) {
