@@ -24,7 +24,7 @@ public class EventHandler {
     public void handle(Event event) { //TODO add scheduling
         logger.info("Polled message event name {}", event.getEventName());
         if (!graphService.isEventSuccessful(event)) {
-            compensationService.compensate(event.getSagaInstanceId());
+            compensationService.startCompensation(event.getSagaInstanceId());
         }
         graphService.handleSagaInstanceEvent(event);
     }

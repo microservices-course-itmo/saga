@@ -134,6 +134,7 @@ public class KafkaClient {
                     throw new KafkaRuntimeException("Caught WakeupException, but isListeningClosed variable is false", wakeupException);
                 }
             } finally {
+                isListeningClosed.set(true);
                 consumer.close();
             }
         });

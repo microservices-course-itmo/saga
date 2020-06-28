@@ -84,6 +84,16 @@ public class InstanceService {
                 .getSagaName();
     }
 
+    public void updateStepStatus(SagaStepInstance stepInstance, StepStatus status) {
+        stepInstance.setStepStatus(status.name());
+    }
+
+    public SagaStepInstance getSagaStepInstance(Long sagaId, String stepName) {
+        return sagaStepInstanceRepository.findSagaStepInstanceBySagaInstanceIdAndStepName(sagaId, stepName)
+                .orElseThrow(() -> new IllegalArgumentException(String.format("Can't find step with name %s and sagaId %d",
+                        stepName, sagaId)));
+    }
+
     private SagaStepInstance getOccurredSagaStepInstanceWithSuccessfulStatus(Event event, SagaStepDefinition occurredStepDefinition,
                                                                              Long sagaStartTime) {
         List<SagaStepInstance> instances = sagaStepInstanceRepository.findSagaStepInstancesBySagaInstanceId(event.getSagaInstanceId());
@@ -108,10 +118,6 @@ public class InstanceService {
         StepStatus status = isEventSuccessful(event) ? StepStatus.SUCCESSFUL : StepStatus.FAILED;
         updateStepStatus(occurredStep, status);
         return occurredStep;
-    }
-
-    private void updateStepStatus(SagaStepInstance stepInstance, StepStatus status) {
-        stepInstance.setStepStatus(status.name());
     }
 
     private void saveStepsInRepository(SagaStepInstance occurredStep, SagaStepInstance nextStep) {

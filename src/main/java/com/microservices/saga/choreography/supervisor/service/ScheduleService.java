@@ -35,7 +35,7 @@ public class ScheduleService {
         scheduleMap.put(scheduleKey, new AtomicBoolean(false));
         final Runnable compensation = () -> {
             if (scheduleMap.get(scheduleKey).get()) {
-                compensationService.compensate(sagaId);
+                compensationService.startCompensation(sagaId);
             }
         };
         executorService.schedule(compensation, awaitTime, TimeUnit.SECONDS);

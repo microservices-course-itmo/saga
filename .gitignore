@@ -1,5 +1,8 @@
 target/
 build/
+gradle/
+gradlew*
+*.gradle
 .asscache
 .project
 .settings

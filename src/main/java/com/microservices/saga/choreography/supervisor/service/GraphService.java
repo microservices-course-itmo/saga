@@ -2,8 +2,10 @@ package com.microservices.saga.choreography.supervisor.service;
 
 import com.microservices.saga.choreography.supervisor.domain.Event;
 import com.microservices.saga.choreography.supervisor.domain.Message;
+import com.microservices.saga.choreography.supervisor.domain.StepStatus;
 import com.microservices.saga.choreography.supervisor.domain.entity.KafkaCompensation;
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefinition;
+import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepInstance;
 import com.microservices.saga.choreography.supervisor.dto.definition.SagaStepDefinitionDto;
 import com.microservices.saga.choreography.supervisor.exception.StepDefinitionNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -70,10 +72,19 @@ public class GraphService {
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 
+    public SagaStepInstance getSagaStepInstance(SagaStepDefinition stepDefinition, Long sagaId) {
+        return instanceService.getSagaStepInstance(sagaId, stepDefinition.getStepName());
+    }
+
+    public void updateStepStatus(SagaStepInstance stepInstance, StepStatus status) {
+        instanceService.updateStepStatus(stepInstance, status);
+    }
+
     private Message getMessageToNode(Long sagaId, SagaStepDefinition stepDefinition) {
         Headers headers = getHeadersToNode(sagaId, stepDefinition);
         KafkaCompensation kafkaCompensation = stepDefinition.getCompensationInfo().getKafkaCompensation();
-        return new Message(headers, kafkaCompensation.getTopicName(), String.format("COMPENSATION STEP %s", stepDefinition.getStepName()));
+        return new Message(headers, kafkaCompensation.getTopicName(),
+                String.format("COMPENSATION STEP %s", stepDefinition.getStepName()), stepDefinition);
     }
 
     private Headers getHeadersToNode(Long sagaId, SagaStepDefinition stepDefinition) {
