@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.internal.shaded.reactor.util.annotation.NonNull;
 import org.neo4j.ogm.annotation.GeneratedValue;
 import org.neo4j.ogm.annotation.Id;
@@ -22,6 +23,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @ToString
 @EqualsAndHashCode
+@Slf4j
 public class SagaStepDefinition implements Serializable {
     @Id
     @GeneratedValue
@@ -41,20 +43,18 @@ public class SagaStepDefinition implements Serializable {
 
     private Long timeout;
 
-    private static final Logger logger = LoggerFactory.getLogger(
-            SagaStepDefinition.class);
 
     public void update(SagaStepDefinition stepDefinition) {
         this.sagaName = stepDefinition.getSagaName();
+        log.debug("sagaName is updated: {}",this.sagaName);
         this.stepName = stepDefinition.getStepName();
+        log.debug("stepName is updated: {}",this.stepName);
         this.successExecutionInfo = stepDefinition.getSuccessExecutionInfo();
+        log.debug("successExecutionInfo is updated: {}",this.successExecutionInfo);
         this.failExecutionInfo = stepDefinition.getFailExecutionInfo();
+        log.debug("failExecutionInfo is updated: {}", this.failExecutionInfo);
         this.timeout = stepDefinition.getTimeout();
-        logger.debug("Saga and step definition are updated:" +
-                "saga name {}, step name {}, success execution info {}" +
-                "fail execution info{} timeout{}",
-                this.sagaName, this.stepName, this.successExecutionInfo,
-                this.failExecutionInfo, this.timeout);
+        log.debug("timeout: {}", this.timeout);
     }
 }
 

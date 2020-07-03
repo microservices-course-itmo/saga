@@ -1,11 +1,8 @@
 package com.microservices.saga.choreography.supervisor.service;
 
-import com.microservices.saga.choreography.supervisor.kafka.KafkaClient;
 import com.microservices.saga.choreography.supervisor.service.compensation.CompensationService;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -21,8 +18,6 @@ public class ScheduleService {
     private final ScheduledExecutorService executorService;
     private final CompensationService compensationService;
 
-    private static final Logger logger = LoggerFactory.getLogger(
-            ScheduleService.class);
 
     public ScheduleService(CompensationService compensationService) {
         this.scheduleMap = new ConcurrentHashMap<>();
