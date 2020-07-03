@@ -19,7 +19,7 @@
             <fileNamePattern>${USER__HOME}/log.%d{yyyy-MM-dd}.log</fileNamePattern>
 
             <!-- Храним файлы логов 30 дней -->
-            <maxHistory>30</maxHistory>
+            <maxHistory>1</maxHistory>
 
             <!-- Максимальный размер файлов лога 30 гигабайт -->
             <totalSizeCap>10GB</totalSizeCap>
@@ -30,7 +30,7 @@
         </encoder>
     </appender>
 
-    <root level="debug">
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />
     </root>

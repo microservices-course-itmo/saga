@@ -12,8 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeaders;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.nio.ByteBuffer;
@@ -35,9 +33,6 @@ public class GraphService {
     private final DefinitionService definitionService;
     private final InstanceService instanceService;
 
-    private static final Logger logger = LoggerFactory.getLogger(
-            GraphService.class);
-
     public SagaStepDefinition addDefinition(SagaStepDefinitionDto definitionDto) {
         return definitionService.addDefinition(definitionDto);
     }
@@ -46,7 +41,7 @@ public class GraphService {
         try {
             return definitionService.updateDefinition(definitionId, definitionDto);
         } catch (StepDefinitionNotFoundException e) {
-            logger.error("Can't found definition {} for update", definitionId);
+            log.error("Can't found definition {} for update", definitionId);
         }
         return new SagaStepDefinition();
     }

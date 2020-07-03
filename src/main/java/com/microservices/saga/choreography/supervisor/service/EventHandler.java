@@ -17,12 +17,9 @@ public class EventHandler {
     private final ScheduleService scheduleService;
     private final GraphService graphService;
 
-    private static final Logger logger = LoggerFactory.getLogger(
-            EventHandler.class);
-
     @Transactional
     public void handle(Event event) { //TODO add scheduling
-        logger.info("Polled message event name {}", event.getEventName());
+        log.info("Polled message event name {}", event.getEventName());
         if (!graphService.isEventSuccessful(event)) {
             compensationService.startCompensation(event.getSagaInstanceId());
         }

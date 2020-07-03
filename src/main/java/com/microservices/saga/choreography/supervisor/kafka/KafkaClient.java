@@ -1,6 +1,5 @@
 package com.microservices.saga.choreography.supervisor.kafka;
 
-import com.microservices.saga.choreography.supervisor.ChoreographyOrchestratorApplication;
 import com.microservices.saga.choreography.supervisor.domain.Event;
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefinition;
 import com.microservices.saga.choreography.supervisor.exception.KafkaRuntimeException;
@@ -12,8 +11,6 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.nio.ByteBuffer;
@@ -33,8 +30,6 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class KafkaClient {
-    private static final Logger logger = LoggerFactory.getLogger(
-            KafkaClient.class);
     /**
      * Kafka headers keys constants
      */
@@ -89,7 +84,7 @@ public class KafkaClient {
                 startListeningTopics();
             }
             listeningTopics.addAll(newTopics);
-            logger.debug("Topics are subscribed:{}", newTopics);
+            log.debug("Topics are subscribed: {}", newTopics);
         }
     }
 
@@ -102,7 +97,8 @@ public class KafkaClient {
         String successTopic = stepDefinition.getSuccessExecutionInfo().getKafkaSuccessExecutionInfo().getTopicName();
         String failTopic = stepDefinition.getFailExecutionInfo().getKafkaFailExecutionInfo().getTopicName();
         subscribe(Arrays.asList(successTopic, failTopic));
-        logger.debug("Success topics are {}, Fail topics are{}", successTopic, failTopic);
+        log.info("Success topics are {}, Fail topics are {} from {} step",
+                successTopic, failTopic, stepDefinition.getStepName());
     }
 
     /**
@@ -110,31 +106,31 @@ public class KafkaClient {
      */
     private void startListeningTopics() {
         isListeningClosed.set(false);
-        logger.info("Start listening");
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.execute(() -> {
             try {
                 //noinspection InfiniteLoopStatement
                 while (true) {
-                    logger.info("Pooling messages");
+                    log.debug("Pooling messages");
                     consumer.subscribe(listeningTopics);
                     ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(5));
-                    logger.info("Messages polled");
+                    log.debug("Messages polled");
                     for (ConsumerRecord<String, String> record : records) {
                         try {
                             eventHandler.handle(getEventFromHeaders(record.headers())); //TODO executor
                         } catch (Exception e) {
-                            logger.error("Error while handling event", e);
+                            log.error("Error while handling event", e);
                         }
                     }
                 }
             } catch (WakeupException wakeupException) {
                 if (!isListeningClosed.get()) {
-                    logger.error("Kafka Runtime exception", wakeupException);
+                    log.error("Kafka Runtime exception");
                     throw new KafkaRuntimeException("Caught WakeupException, but isListeningClosed variable is false", wakeupException);
                 }
             } finally {
                 isListeningClosed.set(true);
+                log.debug("Listening is closed");
                 consumer.close();
             }
         });
@@ -146,7 +142,6 @@ public class KafkaClient {
      */
     public void stopListeningTopics() {
         isListeningClosed.set(true);
-        logger.info("Listening is stopped");
         consumer.wakeup();
     }
 
@@ -162,19 +157,19 @@ public class KafkaClient {
             switch (header.key()) {
                 case EVENT_TYPE_KEY:
                     eventBuilder.eventName(new String(header.value()));
-                    logger.debug("Event type is {}", eventBuilder.eventName(new String(header.value())));
+                    log.debug("Event type is {}", eventBuilder.eventName(header.value().toString()));
                     break;
                 case EVENT_ID_KEY:
                     eventBuilder.eventId(ByteBuffer.wrap(header.value()).getLong());
-                    logger.debug("Event id is {}", eventBuilder.eventId(ByteBuffer.wrap(header.value()).getLong()));
+                    log.debug("Event id is {}", eventBuilder.eventId(ByteBuffer.wrap(header.value()).getLong()));
                     break;
                 case SAGA_NAME_KEY:
                     eventBuilder.sagaName(new String(header.value()));
-                    logger.debug("Saga name is {}", eventBuilder.sagaName(new String(header.value())));
+                    log.debug("Saga name is {}", eventBuilder.sagaName(header.value().toString()));
                     break;
                 case SAGA_ID_KEY:
                     eventBuilder.sagaInstanceId(ByteBuffer.wrap(header.value()).getLong());
-                    logger.debug("Saga id is {}", eventBuilder.sagaInstanceId(ByteBuffer.wrap(header.value()).getLong()));
+                    log.debug("Saga id is {}", eventBuilder.sagaInstanceId(ByteBuffer.wrap(header.value()).getLong()));
                     break;
             }
 
