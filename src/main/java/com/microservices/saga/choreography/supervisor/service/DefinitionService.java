@@ -6,10 +6,12 @@ import com.microservices.saga.choreography.supervisor.dto.definition.SagaStepDef
 import com.microservices.saga.choreography.supervisor.exception.StepDefinitionNotFoundException;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinitionRepository;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinitionTransitionEventRepository;
+import com.microservices.saga.choreography.supervisor.components.SagaMetrics;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -25,6 +27,9 @@ import static java.util.stream.Collectors.toList;
 @RequiredArgsConstructor
 @Slf4j
 public class DefinitionService {
+    @Autowired
+    private SagaMetrics sagaMetrics;
+
     /**
      * Step definition repo
      */
@@ -50,6 +55,13 @@ public class DefinitionService {
     public SagaStepDefinition addDefinition(SagaStepDefinitionDto stepDefinitionDto) {
         SagaStepDefinition stepDefinition = mapper.map(stepDefinitionDto, SagaStepDefinition.class);
         @NonNull List<String> previousSteps = stepDefinitionDto.getPreviousSteps();
+        
+        // If it's the start of Saga template
+        // Update total number of templates
+        if (previousSteps.isEmpty()) {
+            sagaMetrics.countSagaTemplate(stepDefinition.getSagaName());
+        }
+
         saveTransitionEvent(stepDefinition, previousSteps);
         log.info("Has been added step with {} name {} id ", stepDefinition.getStepName(), stepDefinition.getId());
         return stepDefinitionRepository.save(stepDefinition);

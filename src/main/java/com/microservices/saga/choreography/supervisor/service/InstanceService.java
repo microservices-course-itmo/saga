@@ -10,7 +10,6 @@ import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinit
 import com.microservices.saga.choreography.supervisor.repository.SagaStepInstanceRepository;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepInstanceTransitionRepository;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -21,7 +20,6 @@ import java.util.List;
  */
 @Service
 @AllArgsConstructor
-@Slf4j
 public class InstanceService {
     private final SagaStepDefinitionTransitionEventRepository eventDefinitionRepository;
     final SagaStepInstanceRepository sagaStepInstanceRepository;
@@ -52,7 +50,6 @@ public class InstanceService {
                     .sagaStepDefinitionId(eventDefinition.getNextStep().getId())
                     .startTime(ZonedDateTime.now().toInstant().toEpochMilli())
                     .build();
-            log.info("Was created next step with {} name, {} status", nextStep.getSagaName(), nextStep.getStepStatus());
 
             SagaStepInstanceTransitionEvent transitionEvent = SagaStepInstanceTransitionEvent.builder()
                     .eventId(event.getEventId())
@@ -61,13 +58,7 @@ public class InstanceService {
                     .sagaName(event.getSagaName())
                     .creationTime(ZonedDateTime.now().toInstant().toEpochMilli())
                     .build();
-
-            log.info("Was created transition event with {} name, {} id in {} sagaName",
-                    transitionEvent.getEventName(), transitionEvent.getEventId(), transitionEvent.getSagaName());
-
             transitionEvent.setNextStep(nextStep);
-            log.info("Current step is {} with {} id", nextStep.getStepName(), nextStep.getId());
-
             transitionEvent.setPreviousStep(occurredStep);
 
             saveStepsInRepository(occurredStep, nextStep);

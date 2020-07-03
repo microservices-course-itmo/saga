@@ -1,7 +1,6 @@
 package com.microservices.saga.choreography.supervisor.exception;
 
 public class StepDefinitionNotFoundException extends FormattedException {
-
     /**
      * Constructor that creates an exception with a parameterized message
      *

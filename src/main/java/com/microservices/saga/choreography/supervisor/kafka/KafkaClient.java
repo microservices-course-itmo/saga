@@ -1,5 +1,6 @@
 package com.microservices.saga.choreography.supervisor.kafka;
 
+import com.microservices.saga.choreography.supervisor.components.SagaMetrics;
 import com.microservices.saga.choreography.supervisor.domain.Event;
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefinition;
 import com.microservices.saga.choreography.supervisor.exception.KafkaRuntimeException;
@@ -11,6 +12,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.nio.ByteBuffer;
@@ -58,6 +60,9 @@ public class KafkaClient {
      * Set of listening topics
      */
     private final Set<String> listeningTopics;
+
+    @Autowired
+    private SagaMetrics sagaMetrics;
 
     /**
      * Constructor
@@ -120,6 +125,8 @@ public class KafkaClient {
                             eventHandler.handle(getEventFromHeaders(record.headers())); //TODO executor
                         } catch (Exception e) {
                             log.error("Error while handling event", e);
+                        } finally {
+                            sagaMetrics.countCoordinatorKafkaMessagesPolled(record.topic());
                         }
                     }
                 }
