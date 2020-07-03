@@ -18,7 +18,7 @@
             <!-- daily rollover -->
             <fileNamePattern>${USER__HOME}/log.%d{yyyy-MM-dd}.log</fileNamePattern>
 
-            <!-- Храним файлы логов 30 дней -->
+            <!-- Храним файлы логов 1 день -->
             <maxHistory>1</maxHistory>
 
             <!-- Максимальный размер файлов лога 30 гигабайт -->
