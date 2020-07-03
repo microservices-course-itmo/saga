@@ -15,7 +15,7 @@ import org.slf4j.Logger;
  * <pre>{@code
  * class SomeClass {
  *   @InjectEventLogger
- *   KPIEventsLogger logger;
+ *   EventLogger logger;
  * }
  * }</pre>
  *
@@ -34,7 +34,7 @@ public class EventLogger {
     private final SagaMetrics metrics;
 
     public void trace(Events event, Object... payload) {
-        log.info(event.getTemplate(), payload);
+        log.trace(event.getTemplate(), payload);
         metrics.countEvent(event);
     }
 
