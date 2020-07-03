@@ -4,6 +4,7 @@ import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefi
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefinitionTransitionEvent;
 import com.microservices.saga.choreography.supervisor.dto.definition.SagaStepDefinitionDto;
 import com.microservices.saga.choreography.supervisor.exception.StepDefinitionNotFoundException;
+import com.microservices.saga.choreography.supervisor.kafka.KafkaClient;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinitionRepository;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinitionTransitionEventRepository;
 import com.microservices.saga.choreography.supervisor.components.SagaMetrics;
@@ -55,7 +56,7 @@ public class DefinitionService {
     public SagaStepDefinition addDefinition(SagaStepDefinitionDto stepDefinitionDto) {
         SagaStepDefinition stepDefinition = mapper.map(stepDefinitionDto, SagaStepDefinition.class);
         @NonNull List<String> previousSteps = stepDefinitionDto.getPreviousSteps();
-        
+
         // If it's the start of Saga template
         // Update total number of templates
         if (previousSteps.isEmpty()) {

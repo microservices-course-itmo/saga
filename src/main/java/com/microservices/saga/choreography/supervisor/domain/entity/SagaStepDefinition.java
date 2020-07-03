@@ -1,11 +1,17 @@
 package com.microservices.saga.choreography.supervisor.domain.entity;
 
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.neo4j.driver.internal.shaded.reactor.util.annotation.NonNull;
 import org.neo4j.ogm.annotation.GeneratedValue;
 import org.neo4j.ogm.annotation.Id;
 import org.neo4j.ogm.annotation.NodeEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 
@@ -16,7 +22,6 @@ import java.io.Serializable;
 @NoArgsConstructor
 @ToString
 @EqualsAndHashCode
-@Slf4j
 public class SagaStepDefinition implements Serializable {
     @Id
     @GeneratedValue
@@ -36,17 +41,20 @@ public class SagaStepDefinition implements Serializable {
 
     private Long timeout;
 
+    private static final Logger logger = LoggerFactory.getLogger(
+            SagaStepDefinition.class);
+
     public void update(SagaStepDefinition stepDefinition) {
         this.sagaName = stepDefinition.getSagaName();
-        log.debug("Saga name is updated {}", this.sagaName);
         this.stepName = stepDefinition.getStepName();
-        log.debug("Step name is updated {}", this.stepName);
         this.successExecutionInfo = stepDefinition.getSuccessExecutionInfo();
-        log.debug("Success execution info {}", this.successExecutionInfo);
         this.failExecutionInfo = stepDefinition.getFailExecutionInfo();
-        log.debug("Fail execution info {}", this.failExecutionInfo);
         this.timeout = stepDefinition.getTimeout();
-        log.debug("Timeout started {}", this.timeout);
+        logger.debug("Saga and step definition are updated:" +
+                "saga name {}, step name {}, success execution info {}" +
+                "fail execution info{} timeout{}",
+                this.sagaName, this.stepName, this.successExecutionInfo,
+                this.failExecutionInfo, this.timeout);
     }
 }
 

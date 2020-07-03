@@ -52,7 +52,7 @@ public class InstanceService {
                     .sagaStepDefinitionId(eventDefinition.getNextStep().getId())
                     .startTime(ZonedDateTime.now().toInstant().toEpochMilli())
                     .build();
-            log.debug("Was created next step with {} name, {} id, {} status",
+            log.info("Was created next step with {} name, {} id, {} status",
                     nextStep.getStepName(), nextStep.getId(), nextStep.getStepStatus());
 
 
@@ -63,11 +63,12 @@ public class InstanceService {
                     .sagaName(event.getSagaName())
                     .creationTime(ZonedDateTime.now().toInstant().toEpochMilli())
                     .build();
-            log.debug("Was created transitionEvent with {} eventName, {} eventID, {} sagaName",
+
+            log.info("Was created transition event with {} name, {} id in {} sagaName",
                     transitionEvent.getEventName(), transitionEvent.getEventId(), transitionEvent.getSagaName());
 
             transitionEvent.setNextStep(nextStep);
-            log.debug("Current step is {} with id {}", nextStep.getStepName(), nextStep.getId());
+            log.info("Current step is {} with {} id", nextStep.getStepName(), nextStep.getId());
 
             transitionEvent.setPreviousStep(occurredStep);
 
