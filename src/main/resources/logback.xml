@@ -18,13 +18,20 @@
             <!-- daily rollover -->
             <fileNamePattern>${USER__HOME}/log.%d{yyyy-MM-dd}.log</fileNamePattern>
 
-            <!-- Храним файлы логов 1 день -->
+            <!-- Store log files 1 day -->
             <maxHistory>1</maxHistory>
 
-            <!-- Максимальный размер файлов лога 30 гигабайт -->
+            <!-- Max size for all logs - 10GB  -->
             <totalSizeCap>10GB</totalSizeCap>
 
         </rollingPolicy>
+
+        <triggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <!--Max size per 1 file-->
+            <maxFileSize>5MB</maxFileSize>
+        </triggeringPolicy>
+
         <encoder>
             <pattern>%d{dd.MM.yyyy HH:mm:ss.SSS} [%thread] %-5level  %logger{20} - %msg%n</pattern>
         </encoder>

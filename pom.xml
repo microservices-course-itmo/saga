@@ -23,6 +23,8 @@
         <kafka-clients.version>2.5.0</kafka-clients.version>
         <micrometer.version>1.5.2</micrometer.version>
         <simpleclient.version>0.8.1</simpleclient.version>
+        <buildnumber-maven-plugin.version>1.4</buildnumber-maven-plugin.version>
+        <docker-maven-plugin.version>1.0.0</docker-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -122,6 +124,37 @@
                     <source>11</source>
                     <target>11</target>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>${docker-maven-plugin.version}</version>
+
+                <configuration>
+
+                    <imageName>${project.artifactId}</imageName>
+                    <dockerDirectory>.</dockerDirectory>
+                    <dockerHost>http://127.0.0.1:2375</dockerHost>
+<!--                    <dockerCertPath>C:\Users\donno\.docker\machine\machines\default</dockerCertPath>-->
+                    <resources>
+                        <resource>
+                            <directory>${project.build.directory}</directory>
+                            <include>${project.build.finalName}.jar</include>
+                        </resource>
+                    </resources>
+                </configuration>
+
+                <executions>
+                    <execution>
+                        <id>docker image build</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>tag</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
