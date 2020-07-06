@@ -8,37 +8,28 @@
         </encoder>
     </appender>
 
-    <property name="USER__HOME" value="./src/main/java/com/microservices/saga/choreography/supervisor/logs"/>
-
     <appender name="FILE"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${USER__HOME}/log.log</file>
+        <file>log.log</file>
         <rollingPolicy
                 class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>${USER__HOME}/log.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>log.%d{yyyy-MM-dd}.log</fileNamePattern>
 
-            <!-- Store log files 1 day -->
+            <!-- Храним файлы логов 1 день -->
             <maxHistory>1</maxHistory>
 
-            <!-- Max size for all logs - 10GB  -->
+            <!-- Максимальный размер файлов лога 30 гигабайт -->
             <totalSizeCap>10GB</totalSizeCap>
 
         </rollingPolicy>
-
-        <triggeringPolicy
-                class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-            <!--Max size per 1 file-->
-            <maxFileSize>5MB</maxFileSize>
-        </triggeringPolicy>
-
         <encoder>
-            <pattern>%d{dd.MM.yyyy HH:mm:ss.SSS} [%thread] %-5level  %logger{20} - %msg%n</pattern>
+            <pattern>%d{dd.MM.yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{20} - %msg%n</pattern>
         </encoder>
     </appender>
 
     <root level="INFO">
-        <appender-ref ref="STDOUT" />
-        <appender-ref ref="FILE" />
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
     </root>
 </configuration>

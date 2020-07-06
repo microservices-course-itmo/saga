@@ -1,5 +1,7 @@
 package com.microservices.saga.choreography.supervisor.service;
 
+import com.microservices.saga.choreography.supervisor.components.SagaHelper;
+import com.microservices.saga.choreography.supervisor.components.SagaMetrics;
 import com.microservices.saga.choreography.supervisor.domain.Event;
 import com.microservices.saga.choreography.supervisor.domain.StepStatus;
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefinition;
@@ -11,6 +13,7 @@ import com.microservices.saga.choreography.supervisor.repository.SagaStepInstanc
 import com.microservices.saga.choreography.supervisor.repository.SagaStepInstanceTransitionRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -27,6 +30,15 @@ public class InstanceService {
     final SagaStepInstanceRepository sagaStepInstanceRepository;
     private final SagaStepInstanceTransitionRepository eventInstanceRepository;
 
+//    @InjectEventLogger
+//    private final EventLogger logger;
+
+    @Autowired
+    private SagaHelper sagaHelper;
+
+    @Autowired
+    private SagaMetrics sagaMetrics;
+
     /**
      * Handling new event
      *
@@ -40,8 +52,26 @@ public class InstanceService {
         SagaStepDefinitionTransitionEvent eventDefinition = getEventDefinition(event);
 
         SagaStepDefinition stepDefinition = eventDefinition.getPreviousStep();
+
+        var stepName = stepDefinition.getStepName();
+        var sagaName = stepDefinition.getSagaName();
+
+        if (sagaHelper.isFirstStepOfSagaInstance(sagaName, stepName)) {
+            sagaMetrics.countSagaInstanceStarted(sagaName);
+        }
+//        Doesn't work because process can't identify the end of saga
+//        if (sagaHelper.isLastStepOfSagaInstance(sagaName, stepName)) {
+//            MetricUtils.incrementSagaInstanceCompleted(sagaName);
+//        }
+
         Long sagaStartTime = eventDefinition.getCreationTime();
+        log.debug("sagaStartTime = {}", sagaStartTime);
         SagaStepInstance occurredStep = getOccurredSagaStepInstanceWithSuccessfulStatus(event, stepDefinition, sagaStartTime);
+
+        // First step has incorrect value
+        // due incorrect saved values of the start timestamp
+        var executionTime = occurredStep.getEndTime() - occurredStep.getStartTime();
+        sagaMetrics.recordSagaInstanceStep(sagaName, occurredStep.getStepName(), executionTime);
 
         if (eventDefinition.getNextStep() != null) {
             SagaStepInstance nextStep = SagaStepInstance.builder()
@@ -52,9 +82,13 @@ public class InstanceService {
                     .sagaStepDefinitionId(eventDefinition.getNextStep().getId())
                     .startTime(ZonedDateTime.now().toInstant().toEpochMilli())
                     .build();
-            log.info("Was created next step with {} name, {} id, {} status",
-                    nextStep.getStepName(), nextStep.getId(), nextStep.getStepStatus());
-
+//            logger.info(Events.I_CREATE_NEXT_INSTANCE_STEP,
+//                    nextStep.getStepName(),
+//                    nextStep.getId(),
+//                    nextStep.getStepStatus(),
+//                    nextStep.getSagaName(),
+//                    nextStep.getSagaInstanceId()
+//            );
 
             SagaStepInstanceTransitionEvent transitionEvent = SagaStepInstanceTransitionEvent.builder()
                     .eventId(event.getEventId())
@@ -63,12 +97,21 @@ public class InstanceService {
                     .sagaName(event.getSagaName())
                     .creationTime(ZonedDateTime.now().toInstant().toEpochMilli())
                     .build();
+//            logger.info(Events.I_CREATE_TRANSITION_EVENT,
+//                    transitionEvent.getEventName(),
+//                    transitionEvent.getEventId(),
+//                    transitionEvent.getSagaName(),
+//                    transitionEvent.getSagaInstanceId()
+//            );
 
-            log.info("Was created transition event with {} name, {} id in {} sagaName",
-                    transitionEvent.getEventName(), transitionEvent.getEventId(), transitionEvent.getSagaName());
 
             transitionEvent.setNextStep(nextStep);
-            log.info("Current step is {} with {} id", nextStep.getStepName(), nextStep.getId());
+//            logger.info(Events.I_CHANGE_CURRENT_INSTANCE_STEP,
+//                    nextStep.getStepName(),
+//                    nextStep.getId(),
+//                    nextStep.getSagaName(),
+//                    nextStep.getSagaInstanceId()
+//            );
 
             transitionEvent.setPreviousStep(occurredStep);
 
@@ -127,7 +170,20 @@ public class InstanceService {
 
     private void saveStepsInRepository(SagaStepInstance occurredStep, SagaStepInstance nextStep) {
         sagaStepInstanceRepository.save(occurredStep);
+//        logger.info(Events.I_SAVE_OCCURRED_INSTANCE_STEP,
+//                occurredStep.getStepName(),
+//                occurredStep.getId(),
+//                occurredStep.getSagaName(),
+//                occurredStep.getSagaInstanceId()
+//        );
+
         sagaStepInstanceRepository.save(nextStep);
+//        logger.info(Events.I_SAVE_NEXT_INSTANCE_STEP,
+//                nextStep.getStepName(),
+//                nextStep.getId(),
+//                nextStep.getSagaName(),
+//                nextStep.getSagaInstanceId()
+//        );
     }
 
     private SagaStepDefinitionTransitionEvent getEventDefinition(Event event) {

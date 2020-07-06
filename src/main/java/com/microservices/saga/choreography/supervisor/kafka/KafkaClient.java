@@ -1,9 +1,12 @@
 package com.microservices.saga.choreography.supervisor.kafka;
 
+import com.microservices.saga.choreography.supervisor.annotations.InjectEventLogger;
 import com.microservices.saga.choreography.supervisor.components.SagaMetrics;
 import com.microservices.saga.choreography.supervisor.domain.Event;
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefinition;
 import com.microservices.saga.choreography.supervisor.exception.KafkaRuntimeException;
+import com.microservices.saga.choreography.supervisor.logging.EventLogger;
+import com.microservices.saga.choreography.supervisor.logging.Events;
 import com.microservices.saga.choreography.supervisor.service.EventHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -35,7 +38,6 @@ public class KafkaClient {
     /**
      * Kafka headers keys constants
      */
-
     private static final String EVENT_TYPE_KEY = "event-type";
     private static final String EVENT_ID_KEY = "event-id";
     private static final String SAGA_NAME_KEY = "saga-name";
@@ -64,6 +66,9 @@ public class KafkaClient {
     @Autowired
     private SagaMetrics sagaMetrics;
 
+    @InjectEventLogger
+    EventLogger logger;
+
     /**
      * Constructor
      */
@@ -89,7 +94,7 @@ public class KafkaClient {
                 startListeningTopics();
             }
             listeningTopics.addAll(newTopics);
-            log.debug("Topics are subscribed: {}", newTopics);
+            logger.info(Events.I_KAFKA_SUBSCRIBED_ON_TOPICS, newTopics);
         }
     }
 
@@ -102,8 +107,6 @@ public class KafkaClient {
         String successTopic = stepDefinition.getSuccessExecutionInfo().getKafkaSuccessExecutionInfo().getTopicName();
         String failTopic = stepDefinition.getFailExecutionInfo().getKafkaFailExecutionInfo().getTopicName();
         subscribe(Arrays.asList(successTopic, failTopic));
-        log.info("Success topics are {}, Fail topics are {} from {} step",
-                successTopic, failTopic, stepDefinition.getStepName());
     }
 
     /**
@@ -116,12 +119,13 @@ public class KafkaClient {
             try {
                 //noinspection InfiniteLoopStatement
                 while (true) {
-                    log.debug("Pooling messages");
+                    log.info("Pooling messages");
                     consumer.subscribe(listeningTopics);
                     ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(5));
-                    log.debug("Messages polled");
+                    log.info("Messages polled");
                     for (ConsumerRecord<String, String> record : records) {
                         try {
+                            log.debug("Record #{}", record.key());
                             eventHandler.handle(getEventFromHeaders(record.headers())); //TODO executor
                         } catch (Exception e) {
                             log.error("Error while handling event", e);
@@ -132,12 +136,10 @@ public class KafkaClient {
                 }
             } catch (WakeupException wakeupException) {
                 if (!isListeningClosed.get()) {
-                    log.error("Kafka Runtime exception");
                     throw new KafkaRuntimeException("Caught WakeupException, but isListeningClosed variable is false", wakeupException);
                 }
             } finally {
                 isListeningClosed.set(true);
-                log.debug("Listening is closed");
                 consumer.close();
             }
         });
@@ -160,27 +162,38 @@ public class KafkaClient {
      */
     private Event getEventFromHeaders(Headers headers) {
         Event.EventBuilder eventBuilder = Event.builder();
+
         for (Header header : headers) {
+
             switch (header.key()) {
+
                 case EVENT_TYPE_KEY:
-                    eventBuilder.eventName(new String(header.value()));
-                    log.debug("Event type is {}", eventBuilder.eventName(header.value().toString()));
+                    var eventType = new String(header.value());
+                    eventBuilder.eventName(eventType);
+                    log.debug("Event type is {}", eventType);
                     break;
+
                 case EVENT_ID_KEY:
-                    eventBuilder.eventId(ByteBuffer.wrap(header.value()).getLong());
-                    log.debug("Event id is {}", eventBuilder.eventId(ByteBuffer.wrap(header.value()).getLong()));
+                    var eventIdBuffer = ByteBuffer.wrap(header.value()).getLong();
+                    eventBuilder.eventId(eventIdBuffer);
+                    log.debug("Event id is {}", eventIdBuffer);
                     break;
+
                 case SAGA_NAME_KEY:
-                    eventBuilder.sagaName(new String(header.value()));
-                    log.debug("Saga name is {}", eventBuilder.sagaName(header.value().toString()));
+                    var sagaName = new String(header.value());
+                    eventBuilder.sagaName(sagaName);
+                    log.debug("Saga name is {}", sagaName);
                     break;
+
                 case SAGA_ID_KEY:
-                    eventBuilder.sagaInstanceId(ByteBuffer.wrap(header.value()).getLong());
-                    log.debug("Saga id is {}", eventBuilder.sagaInstanceId(ByteBuffer.wrap(header.value()).getLong()));
+                    var sagaInstanceIdBuffer = ByteBuffer.wrap(header.value()).getLong();
+                    eventBuilder.sagaInstanceId(sagaInstanceIdBuffer);
+                    log.debug("Saga id is {}", sagaInstanceIdBuffer);
                     break;
             }
-
         }
+
+
         return eventBuilder.build(); //TODO handle null fields
     }
 }

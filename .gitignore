@@ -18,3 +18,4 @@ gradlew*
 .DS_Store
 .classpath
 bin
+/*.log

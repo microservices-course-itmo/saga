@@ -1,16 +1,17 @@
 package com.microservices.saga.choreography.supervisor.service;
 
+import com.microservices.saga.choreography.supervisor.annotations.InjectEventLogger;
+import com.microservices.saga.choreography.supervisor.components.SagaMetrics;
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefinition;
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefinitionTransitionEvent;
 import com.microservices.saga.choreography.supervisor.dto.definition.SagaStepDefinitionDto;
 import com.microservices.saga.choreography.supervisor.exception.StepDefinitionNotFoundException;
-import com.microservices.saga.choreography.supervisor.kafka.KafkaClient;
+import com.microservices.saga.choreography.supervisor.logging.EventLogger;
+import com.microservices.saga.choreography.supervisor.logging.Events;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinitionRepository;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinitionTransitionEventRepository;
-import com.microservices.saga.choreography.supervisor.components.SagaMetrics;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,6 @@ import static java.util.stream.Collectors.toList;
  */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class DefinitionService {
     @Autowired
     private SagaMetrics sagaMetrics;
@@ -46,6 +46,8 @@ public class DefinitionService {
      */
     private final ModelMapper mapper;
 
+    @InjectEventLogger
+    EventLogger logger;
 
     /**
      * Saving step definition in database
@@ -64,7 +66,6 @@ public class DefinitionService {
         }
 
         saveTransitionEvent(stepDefinition, previousSteps);
-        log.info("Has been added step with {} name {} id ", stepDefinition.getStepName(), stepDefinition.getId());
         return stepDefinitionRepository.save(stepDefinition);
     }
 
@@ -80,12 +81,20 @@ public class DefinitionService {
             throws StepDefinitionNotFoundException {
         SagaStepDefinition updatedDefinition = mapper.map(stepDefinitionDto, SagaStepDefinition.class);
 
-
         SagaStepDefinition foundDefinition = stepDefinitionRepository.findById(definitionId)
                 .orElseThrow(() -> new StepDefinitionNotFoundException("Can't find definition with definitionId {}", definitionId));
 
         foundDefinition.update(updatedDefinition);
-        log.debug("Definition with {} id was updated: {}", definitionId, updatedDefinition);
+
+        logger.info(Events.I_UPDATE_STEP_DEFINITION,
+                updatedDefinition.getId(),
+                updatedDefinition.getSagaName(),
+                updatedDefinition.getStepName(),
+                updatedDefinition.getSuccessExecutionInfo(),
+                updatedDefinition.getFailExecutionInfo(),
+                updatedDefinition.getTimeout()
+        );
+
         return stepDefinitionRepository.save(foundDefinition);
     }
 
@@ -100,7 +109,7 @@ public class DefinitionService {
                     List<SagaStepDefinitionTransitionEvent> allEventsWithDefinition = getAllEventsWithDefinition(sagaStepDefinition);
                     deleteTransitions(allEventsWithDefinition);
                 });
-        log.debug("All events with definition was deleted in {} step", definitionId);
+        logger.info(Events.I_DELETE_STEP_DEFINITION, definitionId);
     }
 
     /**
@@ -153,7 +162,6 @@ public class DefinitionService {
      */
     private void deleteTransitions(@NonNull List<SagaStepDefinitionTransitionEvent> transitionEvents) {
         transitionEvents.forEach(transitionEventRepository::delete);
-        log.info("This list of events was deleted {}", transitionEvents);
     }
 
     /**
@@ -176,6 +184,14 @@ public class DefinitionService {
                     .nextStep(stepDefinition)
                     .build();
             transitionEventRepository.save(definitionTransitionEvent);
+
+            logger.info(Events.I_SAVE_TRANSITION_EVENT,
+                    definitionTransitionEvent.getEventName(),
+                    definitionTransitionEvent.getEventId(),
+                    definitionTransitionEvent.getNextStep(),
+                    definitionTransitionEvent.getPreviousStep(),
+                    definitionTransitionEvent.getCreationTime()
+            );
         }
     }
 }

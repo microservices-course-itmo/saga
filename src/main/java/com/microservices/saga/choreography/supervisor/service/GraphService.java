@@ -1,5 +1,6 @@
 package com.microservices.saga.choreography.supervisor.service;
 
+import com.microservices.saga.choreography.supervisor.annotations.InjectEventLogger;
 import com.microservices.saga.choreography.supervisor.domain.Event;
 import com.microservices.saga.choreography.supervisor.domain.Message;
 import com.microservices.saga.choreography.supervisor.domain.StepStatus;
@@ -8,6 +9,8 @@ import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefi
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepInstance;
 import com.microservices.saga.choreography.supervisor.dto.definition.SagaStepDefinitionDto;
 import com.microservices.saga.choreography.supervisor.exception.StepDefinitionNotFoundException;
+import com.microservices.saga.choreography.supervisor.logging.EventLogger;
+import com.microservices.saga.choreography.supervisor.logging.Events;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.header.Headers;
@@ -32,6 +35,9 @@ public class GraphService {
 
     private final DefinitionService definitionService;
     private final InstanceService instanceService;
+
+    @InjectEventLogger
+    EventLogger logger;
 
     public SagaStepDefinition addDefinition(SagaStepDefinitionDto definitionDto) {
         return definitionService.addDefinition(definitionDto);
@@ -73,6 +79,13 @@ public class GraphService {
 
     public void updateStepStatus(SagaStepInstance stepInstance, StepStatus status) {
         instanceService.updateStepStatus(stepInstance, status);
+        logger.info(Events.I_UPDATE_STEP_STATUS,
+                status,
+                stepInstance.getStepName(),
+                stepInstance.getId(),
+                stepInstance.getSagaName(),
+                stepInstance.getSagaInstanceId()
+        );
     }
 
     private Message getMessageToNode(Long sagaId, SagaStepDefinition stepDefinition) {

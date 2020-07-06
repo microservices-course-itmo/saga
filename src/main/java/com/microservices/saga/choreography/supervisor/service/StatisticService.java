@@ -5,7 +5,6 @@ import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepInst
 import com.microservices.saga.choreography.supervisor.dto.measure.SagaInstanceStats;
 import com.microservices.saga.choreography.supervisor.dto.measure.SagaStats;
 import com.microservices.saga.choreography.supervisor.exception.FormattedRuntimeException;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
 
@@ -17,10 +16,7 @@ import java.util.Optional;
 import static java.util.Comparator.comparingLong;
 
 @Service
-@Slf4j
 public class StatisticService {
-
-
     public SagaStats getStatisticForSaga(Map<Long, SagaInstanceStats> statsForInstances) {
         Optional<ImmutablePair<Long, Long>> mostTimeConsuming = statsForInstances.entrySet().stream()
                 .max(comparingLong(e -> e.getValue().getTotalExecutionTime()))
@@ -39,7 +35,6 @@ public class StatisticService {
 
     public SagaInstanceStats getStatisticForSteps(List<SagaStepInstance> sagaSteps) {
         if (sagaSteps.isEmpty()) {
-            log.warn("Step list to analyze is empty");
             throw new FormattedRuntimeException("Step list to analyze cannot be empty");
         }
         long totalTime = 0;

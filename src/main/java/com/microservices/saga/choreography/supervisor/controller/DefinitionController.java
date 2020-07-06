@@ -1,8 +1,11 @@
 package com.microservices.saga.choreography.supervisor.controller;
 
+import com.microservices.saga.choreography.supervisor.annotations.InjectEventLogger;
 import com.microservices.saga.choreography.supervisor.domain.entity.SagaStepDefinition;
 import com.microservices.saga.choreography.supervisor.dto.definition.SagaStepDefinitionDto;
 import com.microservices.saga.choreography.supervisor.kafka.KafkaClient;
+import com.microservices.saga.choreography.supervisor.logging.EventLogger;
+import com.microservices.saga.choreography.supervisor.logging.Events;
 import com.microservices.saga.choreography.supervisor.repository.SagaStepDefinitionRepository;
 import com.microservices.saga.choreography.supervisor.service.GraphService;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +24,26 @@ public class DefinitionController {
     private final KafkaClient kafkaClient;
     private final SagaStepDefinitionRepository stepDefinitionRepository;
 
+    @InjectEventLogger
+    EventLogger logger;
 
     @PostMapping(value = "", headers = {"Content-type=application/json"})
     public ResponseEntity<SagaStepDefinition> addDefinition(@RequestBody @Valid SagaStepDefinitionDto stepDefinitionDto) {
         SagaStepDefinition sagaStepDefinition = graphService.addDefinition(stepDefinitionDto);
+
+        var stepName = sagaStepDefinition.getStepName();
+        var stepId = sagaStepDefinition.getId();
+        var sagaName = sagaStepDefinition.getSagaName();
+
+        logger.info(Events.I_ADD_STEP_DEFINITION, stepName, stepId, sagaName);
         kafkaClient.subscribeOnStepDefinition(sagaStepDefinition);
+//
+//        var successTopic = sagaStepDefinition.getSuccessExecutionInfo().getKafkaSuccessExecutionInfo().getTopicName();
+//        var successEvent = sagaStepDefinition.getSuccessExecutionInfo().getKafkaSuccessExecutionInfo().getEventType();
+//        var failTopic = sagaStepDefinition.getFailExecutionInfo().getKafkaFailExecutionInfo().getTopicName();
+//        var failEvent = sagaStepDefinition.getFailExecutionInfo().getKafkaFailExecutionInfo().getEventType();
+//
+//        logger.info(Events.I_SUBSCRIBE_TOPICS, successTopic, successEvent, failTopic, failEvent);
         return ResponseEntity.ok().body(sagaStepDefinition);
     }
 

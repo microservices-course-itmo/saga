@@ -25,7 +25,6 @@ public class MeasureService {
     private final SagaStepInstanceRepository stepInstanceRepository;
     private final StatisticService statisticService;
 
-
     public List<StepMetrics> getAllStepMetrics() {
         return StreamSupport.stream(stepInstanceRepository.findAll().spliterator(), false)
                 .map(this::mapStepToMetric)
