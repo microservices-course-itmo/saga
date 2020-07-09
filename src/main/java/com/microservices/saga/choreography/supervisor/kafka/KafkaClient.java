@@ -128,7 +128,7 @@ public class KafkaClient {
                             log.debug("Record #{}", record.key());
                             eventHandler.handle(getEventFromHeaders(record.headers())); //TODO executor
                         } catch (Exception e) {
-                            log.error("Error while handling event", e);
+                            log.error("KAFKA : Error while handling event", e);
                         } finally {
                             sagaMetrics.countCoordinatorKafkaMessagesPolled(record.topic());
                         }

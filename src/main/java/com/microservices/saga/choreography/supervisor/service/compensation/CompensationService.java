@@ -1,8 +1,11 @@
 package com.microservices.saga.choreography.supervisor.service.compensation;
 
+import com.microservices.saga.choreography.supervisor.annotations.InjectEventLogger;
 import com.microservices.saga.choreography.supervisor.components.SagaMetrics;
 import com.microservices.saga.choreography.supervisor.domain.Message;
 import com.microservices.saga.choreography.supervisor.domain.StepStatus;
+import com.microservices.saga.choreography.supervisor.logging.EventLogger;
+import com.microservices.saga.choreography.supervisor.logging.Events;
 import com.microservices.saga.choreography.supervisor.service.GraphService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -39,6 +42,9 @@ public class CompensationService {
      */
     private final Set<Long> sagaCompensations;
 
+    @InjectEventLogger
+    EventLogger logger;
+
     /**
      * Constructor
      */
@@ -53,13 +59,13 @@ public class CompensationService {
      * Starts compensation
      */
     public synchronized void startCompensation(Long sagaId) {
-        log.info("Request for compensation. Saga {}", sagaId);
+        logger.info(Events.I_REQUEST_COMPENSATION, sagaId);
         if (!sagaCompensations.contains(sagaId)) {
-            log.info("Start compensation. Saga {}", sagaId);
+            logger.info(Events.I_START_COMPENSATION, sagaId);
             sagaCompensations.add(sagaId);
             compensate(sagaId);
         } else {
-            log.info("Saga already compensated. Saga {}", sagaId);
+            logger.info(Events.I_SAGA_COMPENSATED, sagaId);
         }
     }
 
@@ -75,7 +81,7 @@ public class CompensationService {
                 sendMessage(message.getTopic(), message.getHeaders(), message.getEventMessage());
                 graphService.updateStepStatus(graphService.getSagaStepInstance(message.getStep(), sagaId), StepStatus.COMPENSATED);
             } catch (Exception e) {
-                log.error("Error while sending compensation message", e);
+                logger.error(Events.E_SEND_COMPENSATION_MESSAGE, e);
             }
         });
     }
@@ -84,7 +90,8 @@ public class CompensationService {
      * Sending messages
      */
     public void sendMessage(String topicName, Headers headers, String message) {
-        log.info("COMPENSATION: Send compensation on topic {}, message {}, headers {}", topicName, message, headers);
+        logger.info(Events.I_SEND_COMPENSATION_MESSAGE, topicName, message, headers);
+
         ProducerRecord<String, String> record = new ProducerRecord<>(topicName, message);
         headers.forEach(header -> record.headers().add(header));
         producer.send(record);

@@ -47,7 +47,7 @@ public class GraphService {
         try {
             return definitionService.updateDefinition(definitionId, definitionDto);
         } catch (StepDefinitionNotFoundException e) {
-            log.error("Can't found definition {} for update", definitionId);
+            logger.error(Events.E_UPDATE_STEP_DEFINITION, definitionId);
         }
         return new SagaStepDefinition();
     }

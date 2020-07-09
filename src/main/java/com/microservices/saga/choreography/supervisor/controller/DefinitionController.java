@@ -37,13 +37,7 @@ public class DefinitionController {
 
         logger.info(Events.I_ADD_STEP_DEFINITION, stepName, stepId, sagaName);
         kafkaClient.subscribeOnStepDefinition(sagaStepDefinition);
-//
-//        var successTopic = sagaStepDefinition.getSuccessExecutionInfo().getKafkaSuccessExecutionInfo().getTopicName();
-//        var successEvent = sagaStepDefinition.getSuccessExecutionInfo().getKafkaSuccessExecutionInfo().getEventType();
-//        var failTopic = sagaStepDefinition.getFailExecutionInfo().getKafkaFailExecutionInfo().getTopicName();
-//        var failEvent = sagaStepDefinition.getFailExecutionInfo().getKafkaFailExecutionInfo().getEventType();
-//
-//        logger.info(Events.I_SUBSCRIBE_TOPICS, successTopic, successEvent, failTopic, failEvent);
+
         return ResponseEntity.ok().body(sagaStepDefinition);
     }
 
