@@ -6,7 +6,7 @@
 
     <groupId>com.microservices</groupId>
     <artifactId>choreography-orchestrator</artifactId>
-    <version>0.1.0</version>
+    <version>${current-version}-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <parent>
@@ -23,6 +23,14 @@
         <kafka-clients.version>2.5.0</kafka-clients.version>
         <micrometer.version>1.5.2</micrometer.version>
         <simpleclient.version>0.8.1</simpleclient.version>
+
+        <buildnumber-maven-plugin.version>1.4</buildnumber-maven-plugin.version>
+        <docker-maven-plugin.version>1.0.0</docker-maven-plugin.version>
+
+        <!-- Нужен для scm -->
+        <github>microservices-course-itmo/saga</github>
+
+        <current-version>0.1.0</current-version>
     </properties>
 
     <dependencies>
@@ -113,6 +121,31 @@
         </dependency>
     </dependencies>
 
+    <!-- Нужен для buildnumber-maven-plugin -->
+    <scm>
+        <connection>scm:git:https://https://github.com/${github}.git</connection>
+        <developerConnection>scm:git:https://https://github.com/${github}.git</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://https://github.com/${github}.git</url>
+    </scm>
+
+    <!-- Нужен для пуша jar в репозиторий libs-snapshot-local в jfrog artifactory -->
+    <distributionManagement>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>f85eb0ecebad-snapshots</name> <!-- Сгенерировано jfrog -->
+            <url>http://${env.JFROG_ARTIFACTORY_IP}:8081/artifactory/libs-snapshot-local</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <!-- Нужен для подключения зависимостей из libs-snapshot-local в jfrog artifactory -->
+    <repositories>
+        <repository>
+            <id>reader-snapshots</id>
+            <url>http://${env.JFROG_ARTIFACTORY_IP}:8081/artifactory/libs-snapshot-local</url>
+        </repository>
+    </repositories>
+
     <build>
         <plugins>
             <plugin>
@@ -122,6 +155,88 @@
                     <source>11</source>
                     <target>11</target>
                 </configuration>
+            </plugin>
+
+            <!-- Нужен для определения текущей ветки(scmBranch) -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>buildnumber-maven-plugin</artifactId>
+                <version>${buildnumber-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>create</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <doCheck>false</doCheck>
+                    <doUpdate>false</doUpdate>
+                </configuration>
+            </plugin>
+            <!-- Нужен для сборки docker image с тегами, и его пуша в docker registry -->
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>${docker-maven-plugin.version}</version>
+
+                <configuration>
+
+                    <image>${project.artifactId}</image>
+                    <newName>${env.DOCKER_REGISTRY_IP}:5000/${project.artifactId}</newName>
+
+                    <imageName>${project.artifactId}</imageName>
+                    <dockerDirectory>.</dockerDirectory>
+                    <dockerHost>http://${env.DOCKER_IP}:2375</dockerHost>
+                    <resources>
+                        <resource>
+                            <directory>${project.build.directory}</directory>
+                            <include>${project.build.finalName}.jar</include>
+                        </resource>
+                    </resources>
+                </configuration>
+
+                <executions>
+                    <execution>
+                        <id>docker image build</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>tag</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>branch tag</id>
+                        <configuration>
+                            <newName>${scmBranch}</newName>
+                        </configuration>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>tag</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>version tag</id>
+                        <configuration>
+                            <newName>${current-version}</newName>
+                        </configuration>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>tag</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>push image</id>
+                        <configuration>
+                            <imageName>${env.DOCKER_REGISTRY_IP}:5000/${project.artifactId}</imageName>
+                        </configuration>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>push</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
